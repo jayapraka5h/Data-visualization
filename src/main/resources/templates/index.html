@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Professional Data Visualizer</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="A powerful, free data visualization tool built with Java Spring Boot. Instantly convert CSV and Excel files into interactive Bar, Line, Area, Pie, Scatter, and Bubble charts. Features dark mode, full data preview, and report downloads."
+    />
+    <meta
+      name="keywords"
+      content="Data Visualization, Java Spring Boot, CSV to Chart, Excel Analyzer, Free Dashboard, Business Intelligence, Interactive Charts, Data Analytics Tool, Open Source, ChartJS, Area Chart, Bubble Chart, Scatter Plot, Dark Mode Analytics, Web Graph Maker"
+    />
+    <meta name="author" content="Professional Data Visualizer" />
+
+    <!-- Bootstrap CSS -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <!-- Bootstrap Icons -->
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
+    />
+
+    <!-- Google Fonts -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap"
+      rel="stylesheet"
+    />
+
+    <style>
+      :root {
+        --bg-color: #ffffff; /* White background */
+        --text-color: #333333;
+        --card-bg: #ffffff;
+        --header-bg: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        --dropzone-bg: #f8f9fa; /* Slightly off-white for contrast */
+        --dropzone-border: #e0e0e0;
+        --card-shadow: 0 4px 20px rgba(0, 0, 0, 0.05); /* Softer shadow */
+      }
+
+      [data-theme="dark"] {
+        --bg-color: #121212;
+        --text-color: #e0e0e0;
+        --card-bg: #1e1e1e;
+        --header-bg: linear-gradient(135deg, #3a3a3a 0%, #121212 100%);
+        --dropzone-bg: #2d2d2d;
+        --dropzone-border: #444;
+        --card-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+      }
+
+      body {
+        font-family: "Inter", sans-serif;
+        background-color: var(--bg-color);
+        color: var(--text-color);
+        transition: background-color 0.3s, color 0.3s;
+      }
+      .header {
+        background: var(--header-bg);
+        color: white;
+        padding: 3rem 0; /* More spacing for colorful impact */
+        margin-bottom: 2rem;
+        box-shadow: 0 4px 10px rgba(102, 126, 234, 0.3);
+        position: relative;
+      }
+      .card {
+        border: 1px solid rgba(0, 0, 0, 0.05); /* Subtle border */
+        box-shadow: var(--card-shadow);
+        border-radius: 1rem; /* More rounded */
+        margin-bottom: 1.5rem;
+        background-color: var(--card-bg);
+        color: var(--text-color);
+      }
+      .card-header {
+        background-color: transparent;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        font-weight: 700;
+        padding: 1.25rem;
+        color: var(--text-color);
+      }
+      #drop-zone {
+        border: 2px dashed var(--dropzone-border);
+        border-radius: 1rem;
+        padding: 50px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        background-color: var(--dropzone-bg);
+      }
+      #drop-zone:hover,
+      #drop-zone.dragover {
+        background-color: rgba(102, 126, 234, 0.05);
+        border-color: #667eea;
+        transform: translateY(-2px);
+      }
+      .chart-container {
+        position: relative;
+        height: 60vh;
+        width: 100%;
+      }
+      .theme-toggle {
+        position: absolute;
+        top: 1.5rem;
+        right: 2rem;
+        cursor: pointer;
+        color: white;
+        font-size: 1.5rem;
+        transition: transform 0.2s;
+      }
+      .theme-toggle:hover {
+        transform: scale(1.1);
+      }
+      .form-select,
+      .form-control {
+        background-color: var(--card-bg);
+        color: var(--text-color);
+        border-color: var(--dropzone-border);
+        padding: 0.75rem;
+        border-radius: 0.5rem;
+      }
+      .btn-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        padding: 0.75rem 1.5rem;
+        border-radius: 0.5rem;
+        font-weight: 600;
+        transition: opacity 0.2s;
+      }
+      .btn-primary:hover {
+        opacity: 0.9;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      }
+      table {
+        color: var(--text-color) !important;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="header text-center">
+      <div class="container position-relative">
+        <div class="theme-toggle" id="themeToggle" title="Toggle Dark Mode">
+          <i class="bi bi-moon-stars-fill"></i>
+        </div>
+        <h1>📊 Professional Data Visualizer</h1>
+        <p class="lead mb-0">
+          Upload your CSV or Excel file and visualize data instantly
+        </p>
+      </div>
+    </div>
+
+    <div class="container">
+      <!-- File Upload Section -->
+      <div class="row mb-4">
+        <div class="col-md-12">
+          <div class="card">
+            <div class="card-body">
+              <form id="uploadForm">
+                <div id="drop-zone">
+                  <i class="bi bi-cloud-upload fs-1 text-muted"></i>
+                  <h4 class="mt-2">Drag & Drop or Click to Upload</h4>
+                  <p class="text-muted">Supports .csv and .xlsx</p>
+                  <input
+                    type="file"
+                    id="fileInput"
+                    name="file"
+                    class="d-none"
+                    accept=".csv, .xlsx"
+                  />
+                </div>
+              </form>
+              <div id="uploadStatus" class="mt-3 text-center"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Controls & Visualization (Hidden initially) -->
+      <div id="visualizationSection" class="row d-none">
+        <!-- Sidebar Controls -->
+        <div class="col-lg-3">
+          <div class="card">
+            <div class="card-header">Chart Configuration</div>
+            <div class="card-body">
+              <div class="mb-3">
+                <label for="chartType" class="form-label">Chart Type</label>
+                <select id="chartType" class="form-select">
+                  <option value="bar">Bar Chart</option>
+                  <option value="line">Line Chart</option>
+                  <option value="area">Area Chart</option>
+                  <option value="pie">Pie Chart</option>
+                  <option value="scatter">Scatter Plot</option>
+                  <option value="bubble">Bubble Chart</option>
+                </select>
+              </div>
+
+              <div class="mb-3">
+                <label for="xAxis" class="form-label"
+                  >X-Axis (Category/Key)</label
+                >
+                <select id="xAxis" class="form-select"></select>
+              </div>
+
+              <div class="mb-3">
+                <label for="yAxis" class="form-label">Y-Axis (Value)</label>
+                <select id="yAxis" class="form-select"></select>
+              </div>
+
+              <div class="mb-3 d-none" id="sizeColContainer">
+                <label for="sizeAxis" class="form-label"
+                  >Size (Bubble Only)</label
+                >
+                <select id="sizeAxis" class="form-select"></select>
+              </div>
+
+              <div class="d-grid">
+                <button id="updateChartBtn" class="btn btn-primary">
+                  Update Chart
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="d-grid mt-3">
+            <button id="downloadBtn" class="btn btn-outline-secondary">
+              <i class="bi bi-download"></i> Download Report
+            </button>
+          </div>
+        </div>
+
+        <!-- Report Container (Chart + Data) -->
+        <div class="col-lg-9" id="reportContainer">
+          <!-- Main Chart Area -->
+          <div class="row mb-4">
+            <div class="col-12">
+              <div class="card">
+                <div class="card-body">
+                  <div class="chart-container">
+                    <canvas id="myChart"></canvas>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Extended Data Preview (Bottom) -->
+          <div class="row">
+            <div class="col-12">
+              <div class="card">
+                <div class="card-header">Data Preview (Full)</div>
+                <div
+                  class="card-body p-0"
+                  style="max-height: 500px; overflow: auto; font-size: 0.9rem"
+                >
+                  <table
+                    class="table table-striped table-hover mb-0"
+                    id="previewTable"
+                  >
+                    <thead>
+                      <tr id="previewHeader"></tr>
+                    </thead>
+                    <tbody id="previewBody"></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script>
+      const dropZone = document.getElementById("drop-zone");
+      const fileInput = document.getElementById("fileInput");
+      const uploadForm = document.getElementById("uploadForm");
+      const uploadStatus = document.getElementById("uploadStatus");
+      const visualizationSection = document.getElementById(
+        "visualizationSection"
+      );
+      const chartTypeSelect = document.getElementById("chartType");
+      const xAxisSelect = document.getElementById("xAxis");
+      const yAxisSelect = document.getElementById("yAxis");
+      const sizeAxisSelect = document.getElementById("sizeAxis");
+      const sizeColContainer = document.getElementById("sizeColContainer");
+      const previewHeader = document.getElementById("previewHeader");
+      const previewBody = document.getElementById("previewBody");
+      const updateChartBtn = document.getElementById("updateChartBtn");
+      const themeToggle = document.getElementById("themeToggle");
+
+      let currentDataset = null;
+      let chartInstance = null;
+      let isDark = false;
+
+      // Theme Toggle
+      themeToggle.addEventListener("click", () => {
+        isDark = !isDark;
+        document.body.setAttribute("data-theme", isDark ? "dark" : "light");
+        themeToggle.innerHTML = isDark
+          ? '<i class="bi bi-sun-fill"></i>'
+          : '<i class="bi bi-moon-stars-fill"></i>';
+        if (chartInstance) renderChart(); // re-render chart for dark mode colors
+      });
+
+      // Drag & Drop Handlers
+      dropZone.addEventListener("click", () => fileInput.click());
+      dropZone.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        dropZone.classList.add("dragover");
+      });
+      dropZone.addEventListener("dragleave", () =>
+        dropZone.classList.remove("dragover")
+      );
+      dropZone.addEventListener("drop", (e) => {
+        e.preventDefault();
+        dropZone.classList.remove("dragover");
+        if (e.dataTransfer.files.length) {
+          handleFile(e.dataTransfer.files[0]);
+        }
+      });
+      fileInput.addEventListener("change", (e) => {
+        if (e.target.files.length) handleFile(e.target.files[0]);
+      });
+
+      // Show/Hide Size Column based on chart type
+      chartTypeSelect.addEventListener("change", (e) => {
+        if (e.target.value === "bubble") {
+          sizeColContainer.classList.remove("d-none");
+        } else {
+          sizeColContainer.classList.add("d-none");
+        }
+      });
+
+      function handleFile(file) {
+        const formData = new FormData();
+        formData.append("file", file);
+
+        uploadStatus.innerHTML =
+          '<div class="spinner-border text-primary" role="status"></div> Uploading & Parsing...';
+
+        fetch("/api/upload", {
+          method: "POST",
+          body: formData,
+        })
+          .then((response) => {
+            if (!response.ok) throw new Error("Upload failed");
+            return response.json();
+          })
+          .then((data) => {
+            currentDataset = data;
+            uploadStatus.innerHTML = `<span class="text-success">Successfully loaded <strong>${data.fileName}</strong></span>`;
+            visualizationSection.classList.remove("d-none");
+            populateControls(data);
+            renderPreview(data);
+            renderChart(); // Initial Render
+          })
+          .catch((err) => {
+            uploadStatus.innerHTML = `<span class="text-danger">Error: ${err.message}</span>`;
+            console.error(err);
+          });
+      }
+
+      function populateControls(data) {
+        xAxisSelect.innerHTML = "";
+        yAxisSelect.innerHTML = "";
+        sizeAxisSelect.innerHTML = "";
+
+        data.headers.forEach((header) => {
+          const optionX = new Option(header, header);
+          const optionY = new Option(header, header);
+          const optionS = new Option(header, header);
+          xAxisSelect.add(optionX);
+          yAxisSelect.add(optionY);
+          sizeAxisSelect.add(optionS);
+        });
+
+        // Try to auto-select reasonable defaults
+        if (data.headers.length > 1) {
+          yAxisSelect.selectedIndex = data.headers.length - 1;
+          sizeAxisSelect.selectedIndex = data.headers.length - 1;
+        }
+      }
+
+      function renderPreview(data) {
+        previewHeader.innerHTML = "";
+        previewBody.innerHTML = "";
+
+        // Headers
+        data.headers.forEach((h) => {
+          const th = document.createElement("th");
+          th.textContent = h;
+          previewHeader.appendChild(th);
+        });
+
+        // First 5 rows
+        data.rows.slice(0, 5).forEach((row) => {
+          const tr = document.createElement("tr");
+          data.headers.forEach((h) => {
+            const td = document.createElement("td");
+            td.textContent = row[h];
+            tr.appendChild(td);
+          });
+          previewBody.appendChild(tr);
+        });
+      }
+
+      updateChartBtn.addEventListener("click", renderChart);
+
+      function renderChart() {
+        if (!currentDataset) return;
+
+        const ctx = document.getElementById("myChart").getContext("2d");
+        let type = document.getElementById("chartType").value;
+        const xKey = xAxisSelect.value;
+        const yKey = yAxisSelect.value;
+        const sizeKey = sizeAxisSelect.value;
+
+        // Custom Logic for Area (map to line with fill)
+        const isArea = type === "area";
+        const chartType = isArea ? "line" : type;
+
+        // Prepare Data
+        let labels = currentDataset.rows.map((r) => r[xKey]);
+        let dataValues;
+
+        if (type === "bubble") {
+          dataValues = currentDataset.rows.map((r) => ({
+            x: Number(r[xKey]), // Scatter/Bubble requires numeric X usually
+            y: Number(r[yKey]),
+            r: Number(r[sizeKey]) / 10, // scale down radius
+          }));
+          // For bubble, we don't strictly need labels array for X, but it's good for tooltips
+        } else if (type === "scatter") {
+          dataValues = currentDataset.rows.map((r) => ({
+            x: Number(r[xKey]),
+            y: Number(r[yKey]),
+          }));
+        } else {
+          dataValues = currentDataset.rows.map((r) => r[yKey]);
+        }
+
+        // Destroy old chart if exists
+        if (chartInstance) {
+          chartInstance.destroy();
+        }
+
+        // Colors
+        const bgColors = currentDataset.rows.map(
+          () => `hsla(${Math.random() * 360}, 70%, 70%, 0.6)`
+        );
+        const borderColors = currentDataset.rows.map(
+          () => `hsla(${Math.random() * 360}, 70%, 50%, 1)`
+        );
+
+        // Theme adjustments
+        Chart.defaults.color = isDark ? "#e0e0e0" : "#666";
+        Chart.defaults.borderColor = isDark ? "#444" : "#ddd";
+
+        chartInstance = new Chart(ctx, {
+          type: chartType,
+          data: {
+            labels: labels,
+            datasets: [
+              {
+                label: yKey,
+                data: dataValues,
+                backgroundColor:
+                  chartType === "line" && !isArea
+                    ? "rgba(75, 192, 192, 0.2)"
+                    : isArea
+                    ? "rgba(75, 192, 192, 0.5)"
+                    : bgColors,
+                borderColor:
+                  chartType === "line" || isArea
+                    ? "rgba(75, 192, 192, 1)"
+                    : borderColors,
+                borderWidth: 1,
+                fill: isArea,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { position: "top" },
+              title: { display: true, text: `${yKey} by ${xKey}` },
+            },
+            scales:
+              type === "scatter" || type === "bubble"
+                ? {
+                    x: {
+                      type: "linear",
+                      position: "bottom",
+                    },
+                  }
+                : {},
+          },
+        });
+      }
+
+      // Download Chart Functionality (With html2canvas for full report)
+      document
+        .getElementById("downloadBtn")
+        .addEventListener("click", function () {
+          const element = document.getElementById("reportContainer");
+
+          // Temporary style to ensure good capture
+          const originalBg = element.style.backgroundColor;
+          if (!originalBg)
+            element.style.backgroundColor = isDark ? "#1e1e1e" : "#ffffff";
+          element.style.padding = "20px"; // Add some padding for the screenshot
+
+          html2canvas(element, { scale: 2 }).then((canvas) => {
+            const link = document.createElement("a");
+            link.download = "data-analysis-report.png";
+            link.href = canvas.toDataURL("image/png");
+            link.click();
+
+            // Restore
+            element.style.backgroundColor = originalBg;
+            element.style.padding = "";
+          });
+        });
+    </script>
+  </body>
+</html>
